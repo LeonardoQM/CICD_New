@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   hello-job:
     runs-on: ubuntu-latest
@@ -18,22 +21,16 @@ jobs:
           echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
       - name: Install pytest
-        run: pip install pytest
+        run: |
+          pip install pytest
 
       - name: Run tests
-        run: pytest
+        run: |
+          pytest
 
       - name: Build Docker image
         run: |
           docker build -t leonardoq/hello-app:${IMAGE_TAG} .
-
-      - name: Check secrets length
-        run: |
-          echo "Username length:"
-          echo -n "${{ secrets.DOCKER_USERNAME }}" | wc -c
-
-          echo "Password length:"
-          echo -n "${{ secrets.DOCKER_PASSWORD }}" | wc -c
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -45,7 +42,24 @@ jobs:
         run: |
           docker push leonardoq/hello-app:${IMAGE_TAG}
 
-      - name: Display image information
+      - name: Update Kubernetes deployment
         run: |
-          echo "Image pushed:"
-          echo "leonardoq/hello-app:${IMAGE_TAG}"
+          sed -i "s|image: leonardoq/hello-app:.*|image: leonardoq/hello-app:${IMAGE_TAG}|g" k8s/deployment.yaml
+
+      - name: Verify deployment file
+        run: |
+          cat k8s/deployment.yaml
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit updated deployment
+        run: |
+          git add k8s/deployment.yaml
+          git commit -m "Update image to ${IMAGE_TAG} [skip ci]" || echo "No changes to commit"
+
+      - name: Push updated deployment
+        run: |
+          git push
