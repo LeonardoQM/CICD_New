@@ -13,6 +13,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set image tag
+        run: |
+          echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
       - name: Install pytest
         run: pip install pytest
 
@@ -20,7 +24,8 @@ jobs:
         run: pytest
 
       - name: Build Docker image
-        run: docker build -t hello-app:latest .
+        run: |
+          docker build -t leonardoq/hello-app:${IMAGE_TAG} .
 
       - name: Check secrets length
         run: |
@@ -38,5 +43,9 @@ jobs:
 
       - name: Push Docker image
         run: |
-          docker tag hello-app:latest leonardoq/hello-app:latest
-          docker push leonardoq/hello-app:latest
+          docker push leonardoq/hello-app:${IMAGE_TAG}
+
+      - name: Display image information
+        run: |
+          echo "Image pushed:"
+          echo "leonardoq/hello-app:${IMAGE_TAG}"
