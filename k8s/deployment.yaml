@@ -20,6 +20,6 @@ spec:
     spec:
       containers:
       - name: hello-app
-        image: leonardoq/hello-app:c582ddc
+        image: leonardoq/hello-app:5d18e54
         ports:
         - containerPort: 5000
